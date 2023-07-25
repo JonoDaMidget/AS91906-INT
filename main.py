@@ -490,9 +490,8 @@ class streak_frame(Frame):
         if row_index < len(self.data) and column_index < len(self.data[row_index]):
             self.data[row_index][column_index] = value
             self.write_csv_file(self.data)
-            print("Data updated successfully.")
         else:
-            print("Invalid row or column index.")
+            pass
 
     def calc_streak(self):
         for sublist in self.data:
@@ -501,6 +500,8 @@ class streak_frame(Frame):
                 row_num = self.data.index(sublist)
                 current_streak = (self.data[row_num][4])
                 current_streak = int(current_streak)
+                currency = self.data[row_num][2]
+                currency = int(currency)
                 lastlogin = datetime.strptime(self.data[row_num][3], '%Y-%m-%d')
                 current_date = datetime.strptime(str(datetime.now().date()), '%Y-%m-%d')
                 delta = current_date - lastlogin
@@ -510,9 +511,12 @@ class streak_frame(Frame):
                     current_streak = 0
                 elif delta == timedelta(days = 0):
                     pass
+                
+                currency += (current_streak + 1)*5
 
                 self.edit_row_column(row_num, 3, str(datetime.now().date()))
                 self.edit_row_column(row_num, 4, current_streak)
+                self.edit_row_column(row_num, 2, currency)
                 return
 
             except ValueError:
