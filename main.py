@@ -18,7 +18,7 @@ class windows(Tk):
         self.maxsize(462, 690)
         self.minsize(462, 690)
         self.frames = {} # Create dictionary to select out frame variable to use
-        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame, streak_frame):
+        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame, streak_frame, daily_frame):
             frame = F(container, self)
 
             self.frames[F] = frame
@@ -56,6 +56,19 @@ class windows(Tk):
             email = frame.user_entry.get()
             frame = self.frames[streak_frame]
             frame.row_value = email
+            frame.retrieve_data()
+            streak = frame.current_streak
+            frame.streak_label.config(text = streak)
+        
+        elif str(frame) == '.!frame.!shop_frame':
+            frame = self.frames[login_frame]
+            email = frame.user_entry.get()
+            frame = self.frames[streak_frame]
+            frame.row_value = email
+            frame.retrieve_data()
+            currency = frame.currency
+            frame = self.frames[shop_frame]
+            frame.currency_label.config(text = currency)
 
 class login_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -244,6 +257,10 @@ class add_frame(Frame):
         search_button = Button(self, text = 'Search', command = lambda: self.match_search())
         search_button.grid(row = 68, column = 2, sticky = 'E', rowspan = 21)
 
+        self.search_error = Label(self,
+            text = '', fg = 'red')
+        self.search_error.grid(row = 90, column = 2, rowspan = 21, columnspan = 6)
+
         self.search_result_1 = Button(self, width = 15, height = 10, text = 'Placeholder 1')
         self.search_result_2 = Button(self, width = 15, height = 10, text = 'Placeholder 2')
         self.search_result_3 = Button(self, width = 15, height = 10, text = 'Placeholder 3')
@@ -282,12 +299,11 @@ class add_frame(Frame):
             if any(search in b for b in s2_list) and not any(search in a for a in s1_list):
                 self.found_results.append(item[0])
                 self.found = True
-                self.search_error.grid_forget()
+                self.search_error.config(text = '')
         if self.found == False:
-            self.search_error = Label(self,
+            self.search_error.config(
                 text = f'No results found for "{self.search_entry.get()}"\n If you cannot find your plant, please file a ticket!', 
                 fg = 'red')
-            self.search_error.grid(row = 90, column = 2, rowspan = 21, columnspan = 6)
         self.previous_add.grid(row = 262, column = 0, rowspan = 86)
         self.previous_add.config(text = '', state = 'disabled', relief = 'flat')
         self.next_add.grid(row = 262, column = 9, rowspan = 86)
@@ -395,8 +411,8 @@ class shop_frame(Frame):
         
         topnav_settings.grid(row = 43, column = 8, columnspan=2, rowspan = 24, sticky = 'nw')
 
-        currency_label = Button(self, text = 'Money\nPlacehold')
-        currency_label.grid(row = 70, column = 8, rowspan = 41, sticky  = 'E')
+        self.currency_label = Button(self, text = 'Money\nPlacehold')
+        self.currency_label.grid(row = 70, column = 8, rowspan = 41, sticky  = 'E')
 
         pots_button = Button(self, text = 'Pot Designs', bg = '#9AB752', fg = 'white',
                             activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12')
@@ -457,6 +473,10 @@ class task_frame(Frame):
 
         streak_button.grid(row = 400, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
+class daily_frame(Frame):
+    def __init__(self, parent, control_frame):
+        Frame.__init__(self, parent)
+
 class streak_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
@@ -470,9 +490,12 @@ class streak_frame(Frame):
         claim_button = Button(self, text = 'Claim Daily Reward', command = lambda: self.calc_streak())
         claim_button.grid(column = 8, row = 260)
 
+        self.streak_label = Label(self, text = '0', font = 'Arial, 25')
+        self.streak_label.grid(column = 30, row = 260)
+
 
     def read_csv_file(self):
-        self.data = []
+        self.data = [] # Clearing previous contents
         with open('account_details.csv', 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
@@ -482,7 +505,7 @@ class streak_frame(Frame):
     def write_csv_file(self, data):
         with open('account_details.csv', 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
-            csv_file.truncate()
+            csv_file.truncate() # Removes all csv file data once stored within dataframe
             csv_writer.writerows(data)
 
     def edit_row_column(self, row_index, column_index, value):
@@ -493,34 +516,37 @@ class streak_frame(Frame):
         else:
             pass
 
-    def calc_streak(self):
+    def retrieve_data(self):
         for sublist in self.data:
             try:
                 sublist.index(self.row_value)
-                row_num = self.data.index(sublist)
-                current_streak = (self.data[row_num][4])
-                current_streak = int(current_streak)
-                currency = self.data[row_num][2]
-                currency = int(currency)
-                lastlogin = datetime.strptime(self.data[row_num][3], '%Y-%m-%d')
-                current_date = datetime.strptime(str(datetime.now().date()), '%Y-%m-%d')
-                delta = current_date - lastlogin
-                if delta == timedelta(days = 1):
-                    current_streak += 1
-                elif delta > timedelta(days = 1):
-                    current_streak = 0
-                elif delta == timedelta(days = 0):
-                    pass
-                
-                currency += (current_streak + 1)*5
-
-                self.edit_row_column(row_num, 3, str(datetime.now().date()))
-                self.edit_row_column(row_num, 4, current_streak)
-                self.edit_row_column(row_num, 2, currency)
-                return
-
+                self.row_num = self.data.index(sublist) # Finds row index of email to edit further on
+                self.current_streak = (self.data[self.row_num][4])
+                self.current_streak = int(self.current_streak)
+                self.currency = self.data[self.row_num][2]
+                self.currency = int(self.currency)
+                self.lastlogin = datetime.strptime(self.data[self.row_num][3], '%Y-%m-%d')
+                self.current_date = datetime.strptime(str(datetime.now().date()), '%Y-%m-%d')
+                return self.lastlogin, self.current_date
             except ValueError:
                 pass # Ignores other sublists
+
+    def calc_streak(self):
+        self.retrieve_data()
+
+        delta = self.current_date - self.lastlogin
+        if delta == timedelta(days = 1): # Checks whether to change streak or not
+            self.current_streak += 1
+            self.currency += (self.current_streak + 1)*5
+        elif delta > timedelta(days = 1):
+            self.current_streak = 0
+        elif delta == timedelta(days = 0):
+            pass
+
+        self.edit_row_column(self.row_num, 3, str(datetime.now().date()))
+        self.edit_row_column(self.row_num, 4, self.current_streak)
+        self.edit_row_column(self.row_num, 2, self.currency)
+        return
 
 class settings_frame(Frame):
     def __init__(self, parent, control_frame):
