@@ -1,10 +1,15 @@
 from tkinter import Tk, Entry, Label, Frame, Button, messagebox
 from tkinter.simpledialog import askstring
 import re
-
+try: # Only runs if access granted
+    from weather_module import temperature, humidity, weather
+except ImportError:
+    pass
+from datetime import datetime, timedelta
+import csv
 
 class windows(Tk):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs): # *args **kwargs in case other params passed in.
         Tk.__init__(self, *args, **kwargs)
         self.wm_title('CBT')
         container = Frame(self, height = 690, width = 462)
@@ -13,7 +18,7 @@ class windows(Tk):
         self.maxsize(462, 690)
         self.minsize(462, 690)
         self.frames = {} # Create dictionary to select out frame variable to use
-        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame):
+        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame, streak_frame):
             frame = F(container, self)
 
             self.frames[F] = frame
@@ -43,8 +48,14 @@ class windows(Tk):
             # Reconfigures email which appear on settings screen
             frame.email_label.config(text = f'Email: *****{self.display2}')
         
-        if str(frame) == '.!frame.!login_frame': # If going to settings frame
+        elif str(frame) == '.!frame.!login_frame': # If going to login frame
             frame.login_error.config(text = '')
+        
+        elif str(frame) == '.!frame.!streak_frame':
+            frame = self.frames[login_frame]
+            email = frame.user_entry.get()
+            frame = self.frames[streak_frame]
+            frame.row_value = email
 
 class login_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -54,7 +65,6 @@ class login_frame(Frame):
 
         title_label = Label(self, text='App', font = ('Arial', 35))
         title_label.grid(row = 95, column = 18, rowspan = 59, columnspan = 20)
-
         self.user_label = Label(self, text = 'Email:')
         self.user_label.grid(row = 250, column = 28, rowspan = 21, columnspan = 6, sticky = 'w')
         self.user_entry = Entry(self, width = 30)
@@ -103,7 +113,7 @@ class login_frame(Frame):
             else:
                 break
         file = open('account_details.csv', 'a')
-        new_info = '\n' + new_email + ',' + new_password + ',0'
+        new_info = '\n' + new_email.lower() + ',' + new_password + ',100,,0,,'
         file.write(new_info)
         file.close()
 
@@ -112,7 +122,7 @@ class login_frame(Frame):
             self.login_error.config(text='Please enter an e-mail')
             return
         else:
-            email = self.user_entry.get()
+            email = self.user_entry.get().lower()
         if self.pass_entry.get() == '':
             self.login_error.config(text='Please enter a password')
             return
@@ -137,7 +147,10 @@ class login_frame(Frame):
 class home_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
-        weather_label = Label(self, text = 'Weather Placehold', font = 'Arial, 24') 
+        try:
+            weather_label = Label(self, text = f'{weather}, {temperature}°C, {humidity}%', font = 'Arial, 24')
+        except NameError:
+            weather_label = Label(self, text = 'N/A', font = 'Arial, 24')
         weather_label.grid(row = 0, column = 0, columnspan=71, rowspan = 44, sticky = 'w')
 
         topnav_add = Button(self, text = 'Add', width = 12, height = 1,
@@ -190,7 +203,10 @@ class home_frame(Frame):
 class add_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
-        weather_label = Label(self, text = 'Weather Placehold', font = 'Arial, 24') 
+        try:
+            weather_label = Label(self, text = f'{weather}, {temperature}°C, {humidity}%', font = 'Arial, 24')
+        except NameError:
+            weather_label = Label(self, text = 'N/A', font = 'Arial, 24')
         weather_label.grid(row = 0, column = 0, columnspan=71, rowspan = 44, sticky = 'w')
 
         topnav_add = Button(self, text = 'Add', width = 12, height = 1, 
@@ -224,9 +240,9 @@ class add_frame(Frame):
         topnav_settings.grid(row = 45, column = 8, columnspan=2, sticky = 'nw')
 
         self.search_entry = Entry(self, width = 36, bg = '#F0F0ED')
-        self.search_entry.grid(row = 68, column = 3, columnspan = 4, sticky = 'W')
+        self.search_entry.grid(row = 68, column = 3, columnspan = 4, sticky = 'W', rowspan = 21)
         search_button = Button(self, text = 'Search', command = lambda: self.match_search())
-        search_button.grid(row = 68, column = 2, sticky = 'E')
+        search_button.grid(row = 68, column = 2, sticky = 'E', rowspan = 21)
 
         self.search_result_1 = Button(self, width = 15, height = 10, text = 'Placeholder 1')
         self.search_result_2 = Button(self, width = 15, height = 10, text = 'Placeholder 2')
@@ -266,16 +282,16 @@ class add_frame(Frame):
             if any(search in b for b in s2_list) and not any(search in a for a in s1_list):
                 self.found_results.append(item[0])
                 self.found = True
+                self.search_error.grid_forget()
         if self.found == False:
-            print(f'No results found for "{self.search_entry.get()}", if you cannot find your plant, please file a ticket!')
-
-        self.previous_add.grid(row = 252, column = 0, rowspan = 86)
+            self.search_error = Label(self,
+                text = f'No results found for "{self.search_entry.get()}"\n If you cannot find your plant, please file a ticket!', 
+                fg = 'red')
+            self.search_error.grid(row = 90, column = 2, rowspan = 21, columnspan = 6)
+        self.previous_add.grid(row = 262, column = 0, rowspan = 86)
         self.previous_add.config(text = '', state = 'disabled', relief = 'flat')
-        self.next_add.grid(row = 252, column = 9, rowspan = 86)
+        self.next_add.grid(row = 262, column = 9, rowspan = 86)
         self.next_add.config(text = '', state = 'disabled', relief = 'flat')
-
-        self.search_result_1.update()
-        print(self.search_result_1.winfo_height())
 
         self.display_search()
 
@@ -343,7 +359,10 @@ class shop_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
 
-        weather_label = Label(self, text = 'Weather Placehold', font = 'Arial, 24') 
+        try:
+            weather_label = Label(self, text = f'{weather}, {temperature}°C, {humidity}%', font = 'Arial, 24')
+        except NameError:
+            weather_label = Label(self, text = 'N/A', font = 'Arial, 24')
         weather_label.grid(row = 0, column = 0, columnspan=71, rowspan = 42, sticky = 'w')
 
         topnav_add = Button(self, text = 'Add', width = 12, height = 1, 
@@ -391,8 +410,10 @@ class shop_frame(Frame):
 class task_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
-
-        weather_label = Label(self, text = 'Weather Placehold', font = 'Arial, 24') 
+        try:
+            weather_label = Label(self, text = f'{weather}, {temperature}°C, {humidity}%', font = 'Arial, 24')
+        except NameError:
+            weather_label = Label(self, text = 'N/A', font = 'Arial, 24')
         weather_label.grid(row = 0, column = 0, columnspan=71, rowspan = 42, sticky = 'w')
 
         topnav_add = Button(self, text = 'Add', width = 12, height = 1, 
@@ -431,16 +452,80 @@ class task_frame(Frame):
         tasks_button.grid(row = 190, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
         streak_button = Button(self, text = 'Login Rewards', bg = '#9AB752', fg = 'white',
-            activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12')
+            activebackground = '#9AB752', activeforeground = 'white',
+            width = 24, height = 3, font = 'Arial, 12', command = lambda: control_frame.show_frame(streak_frame))
 
         streak_button.grid(row = 400, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
+class streak_frame(Frame):
+    def __init__(self, parent, control_frame):
+        Frame.__init__(self, parent)
+        self.data = [] # Stores list of lists of csv file
+        self.read_csv_file() # Appends to dataframe
+        self.row_value = None
+
+        back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
+        back_button.grid(column = 0, row = 0, rowspan = 26)
+
+        claim_button = Button(self, text = 'Claim Daily Reward', command = lambda: self.calc_streak())
+        claim_button.grid(column = 8, row = 260)
+
+
+    def read_csv_file(self):
+        self.data = []
+        with open('account_details.csv', 'r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            for row in csv_reader:
+                self.data.append(row)
+        return self.data
+
+    def write_csv_file(self, data):
+        with open('account_details.csv', 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_file.truncate()
+            csv_writer.writerows(data)
+
+    def edit_row_column(self, row_index, column_index, value):
+        self.data = self.read_csv_file()
+        if row_index < len(self.data) and column_index < len(self.data[row_index]):
+            self.data[row_index][column_index] = value
+            self.write_csv_file(self.data)
+            print("Data updated successfully.")
+        else:
+            print("Invalid row or column index.")
+
+    def calc_streak(self):
+        for sublist in self.data:
+            try:
+                sublist.index(self.row_value)
+                row_num = self.data.index(sublist)
+                current_streak = (self.data[row_num][4])
+                current_streak = int(current_streak)
+                lastlogin = datetime.strptime(self.data[row_num][3], '%Y-%m-%d')
+                current_date = datetime.strptime(str(datetime.now().date()), '%Y-%m-%d')
+                delta = current_date - lastlogin
+                if delta == timedelta(days = 1):
+                    current_streak += 1
+                elif delta > timedelta(days = 1):
+                    current_streak = 0
+                elif delta == timedelta(days = 0):
+                    pass
+
+                self.edit_row_column(row_num, 3, str(datetime.now().date()))
+                self.edit_row_column(row_num, 4, current_streak)
+                return
+
+            except ValueError:
+                pass # Ignores other sublists
 
 class settings_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
 
-        weather_label = Label(self, text = 'Weather Placehold', font = 'Arial, 24') 
+        try:
+            weather_label = Label(self, text = f'{weather}, {temperature}°C, {humidity}%', font = 'Arial, 24')
+        except NameError:
+            weather_label = Label(self, text = 'N/A', font = 'Arial, 24')
         weather_label.grid(row = 0, column = 0, columnspan = 71, rowspan = 42, sticky = 'w')
 
         topnav_add = Button(self, text = 'Add', width = 12, height = 1, 
@@ -489,9 +574,6 @@ class settings_frame(Frame):
             fg = 'white', width = 20, font = 'Arial, 10', command = lambda: control_frame.show_frame(login_frame))
 
         logout_button.grid(row = 500, column = 3, columnspan = 4, rowspan = 28)
-
-        logout_button.update()
-        print(logout_button.winfo_height())
 
 if __name__ == '__main__':
     application = windows()
