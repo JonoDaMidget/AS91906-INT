@@ -59,7 +59,8 @@ class windows(Tk):
             frame.retrieve_data()
             streak = frame.current_streak
             frame.streak_label.config(text = streak)
-            frame.claim_button.config(text = "    Claim Today's Daily Reward    ", state = 'active', relief = 'raised')
+            frame.claim_button.config(text = "          Claim Today's Daily Reward        ",
+                                      state = 'active', relief = 'raised')
             frame.streak_info_label.config(text = '')
             frame = self.frames[task_frame]
 
@@ -72,7 +73,8 @@ class windows(Tk):
             frame.retrieve_data()
             streak = frame.current_streak
             frame.streak_label.config(text = streak)
-            frame.claim_button.config(text = "    Claim Today's Daily Reward    ", state = 'active', relief = 'raised')
+            frame.claim_button.config(text = "        Claim Today's Daily Reward        ",
+                                      state = 'active', relief = 'raised')
 
         elif str(frame) == '.!frame.!shop_frame':
             frame = self.frames[login_frame]
@@ -81,8 +83,18 @@ class windows(Tk):
             frame.row_value = email
             frame.retrieve_data()
             currency = frame.currency
+            print(currency)
             frame = self.frames[shop_frame]
-            frame.currency_label.config(text = currency)
+            frame.currency_label.config(text = f'{currency} Leaves')
+
+        elif str(frame) == '.!frame.!home_frame':
+            frame = self.frames[login_frame]
+            email = frame.user_entry.get()
+            frame = self.frames[streak_frame]
+            frame.row_value = email
+            frame.read_csv_file() # In case sign up, reread csv.
+            frame.retrieve_data()
+            frame = self.frames[home_frame]
 
 class login_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -90,7 +102,7 @@ class login_frame(Frame):
         for col in range(100):
             self.grid_columnconfigure(col, minsize = 5, weight = 1)
 
-        title_label = Label(self, text='App', font = ('Arial', 35))
+        title_label = Label(self, text='Blossom', font = ('Arial', 35))
         title_label.grid(row = 95, column = 18, rowspan = 59, columnspan = 20)
         self.user_label = Label(self, text = 'Email:')
         self.user_label.grid(row = 250, column = 28, rowspan = 21, columnspan = 6, sticky = 'w')
@@ -142,6 +154,7 @@ class login_frame(Frame):
         file = open('account_details.csv', 'a')
         new_info = '\n' + new_email.lower() + ',' + new_password + ',100,,0,,'
         file.write(new_info)
+        messagebox.showinfo('Success!', 'Signed up successfully! Close this window to login')
         file.close()
 
     def check_details(self, control_frame):
@@ -211,12 +224,12 @@ class home_frame(Frame):
         topnav_settings.grid(row = 45, column = 8, columnspan=2, rowspan = 24, sticky = 'nw')
 
         main_sprite = Label(self, text = 'Image \nPlacehold', font = 'Arial, 45')
-        main_sprite.grid(row = 202, column = 3, rowspan = 140, columnspan=5)
+        main_sprite.grid(row = 282, column = 3, rowspan = 140, columnspan=5)
 
         left_button = Button(self, text = '<', height = 5) # Swaps sprite
-        left_button.grid(row = 229, column = 0, rowspan = 86)
+        left_button.grid(row = 309, column = 0, rowspan = 86)
         right_button = Button(self, text = '>', height = 5) # Swaps sprite
-        right_button.grid(row = 229, column = 9, rowspan = 86)
+        right_button.grid(row = 309, column = 9, rowspan = 86)
 
         plants_h1 = Label(self, text = 'Common Name', font = 'Arial, 20')
         plants_h1.grid(row = 110, column = 3, columnspan = 5, rowspan = 38)
@@ -224,7 +237,7 @@ class home_frame(Frame):
         plants_h2.grid(row = 148, column = 4, rowspan = 21)
 
         plants_button = Button(self, text = 'Owned Plants', height = 2)
-        plants_button.grid(row = 432, column = 4)
+        plants_button.grid(row = 512, column = 4)
 
 
 class add_frame(Frame):
@@ -333,7 +346,7 @@ class add_frame(Frame):
         self.page_iter = self.page_number
         
         try:
-            self.found_results[self.page_number*4-1]
+            self.found_results[self.page_number*4]
             self.next_add.config(text = '>', state='active', relief='raised')
         except IndexError:
             self.next_add.config(text = '', state='disabled', relief='flat')
@@ -512,7 +525,9 @@ class streak_frame(Frame):
         streak_back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
         streak_back_button.grid(column = 0, row = 0, rowspan = 26, columnspan = 36, sticky = 'W')
 
-        self.claim_button = Button(self, text = "    Claim Today's Daily Reward    ", command = lambda: self.calc_streak())
+        self.claim_button = Button(self, text = "        Claim Today's Daily Reward        ", 
+                                   command = lambda: self.calc_streak()
+                                   )
         self.claim_button.grid(column = 95, row = 456, rowspan = 26, columnspan = 153, sticky = 'W')
 
         self.streak_label = Label(self, text = '0', font = 'Arial, 100')
@@ -655,4 +670,7 @@ class settings_frame(Frame):
 
 if __name__ == '__main__':
     application = windows()
+    application.lift()
+    application.attributes('-topmost',True) # Launches as topmost weather
+    application.after_idle(application.attributes,'-topmost',False)
     application.mainloop()
