@@ -14,5 +14,6 @@ Requirements:
 The project requires these 3rd party modules, which can be installed via console.
  - geocoder
  - geopy
+ - OWM API key
 
 To run the application, launch main.py
