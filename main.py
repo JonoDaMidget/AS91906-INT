@@ -51,6 +51,19 @@ class windows(Tk):
         elif str(frame) == '.!frame.!login_frame': # If going to login frame
             frame.login_error.config(text = '')
         
+        elif str(frame) == '.!frame.!task_frame':
+            frame = self.frames[login_frame]
+            email = frame.user_entry.get()
+            frame = self.frames[streak_frame]
+            frame.row_value = email
+            frame.retrieve_data()
+            streak = frame.current_streak
+            frame.streak_label.config(text = streak)
+            frame.claim_button.config(text = "    Claim Today's Daily Reward    ", state = 'active', relief = 'raised')
+            frame.streak_info_label.config(text = '')
+            frame = self.frames[task_frame]
+
+
         elif str(frame) == '.!frame.!streak_frame':
             frame = self.frames[login_frame]
             email = frame.user_entry.get()
@@ -59,7 +72,8 @@ class windows(Tk):
             frame.retrieve_data()
             streak = frame.current_streak
             frame.streak_label.config(text = streak)
-        
+            frame.claim_button.config(text = "    Claim Today's Daily Reward    ", state = 'active', relief = 'raised')
+
         elif str(frame) == '.!frame.!shop_frame':
             frame = self.frames[login_frame]
             email = frame.user_entry.get()
@@ -463,7 +477,8 @@ class task_frame(Frame):
         topnav_settings.grid(row = 43, column = 8, columnspan = 2, rowspan = 24, sticky = 'nw')
 
         tasks_button = Button(self, text = 'Daily Tasks', bg = '#9AB752', fg = 'white',
-            activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12')
+            activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12',
+            command = lambda: control_frame.show_frame(daily_frame))
 
         tasks_button.grid(row = 190, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
@@ -477,22 +492,36 @@ class daily_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
 
+        for col in range(456):
+            self.grid_columnconfigure(col, minsize = 1, weight = 1)
+
+        task_back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
+        task_back_button.grid(column = 0, row = 0, rowspan = 26, columnspan = 36, sticky = 'W')
+
 class streak_frame(Frame):
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
+
+        for col in range(456):
+            self.grid_columnconfigure(col, minsize = 1, weight = 1)
+
         self.data = [] # Stores list of lists of csv file
         self.read_csv_file() # Appends to dataframe
         self.row_value = None
 
-        back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
-        back_button.grid(column = 0, row = 0, rowspan = 26)
+        streak_back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
+        streak_back_button.grid(column = 0, row = 0, rowspan = 26, columnspan = 36, sticky = 'W')
 
-        claim_button = Button(self, text = 'Claim Daily Reward', command = lambda: self.calc_streak())
-        claim_button.grid(column = 8, row = 260)
+        self.claim_button = Button(self, text = "    Claim Today's Daily Reward    ", command = lambda: self.calc_streak())
+        self.claim_button.grid(column = 95, row = 456, rowspan = 26, columnspan = 153, sticky = 'W')
 
-        self.streak_label = Label(self, text = '0', font = 'Arial, 25')
-        self.streak_label.grid(column = 30, row = 260)
+        self.streak_label = Label(self, text = '0', font = 'Arial, 100')
+        self.streak_label.grid(column = 131, row = 172, rowspan = 155, columnspan = 80, sticky = 'W')
 
+        self.streak_info_label = Label(self, text = '')
+
+        self.streak_title_label = Label(self, text = 'Streak:', font = 'Arial, 24')
+        self.streak_title_label.grid(column = 123, row = 130, rowspan = 42, columnspan = 106, sticky = 'W')
 
     def read_csv_file(self):
         self.data = [] # Clearing previous contents
@@ -525,8 +554,15 @@ class streak_frame(Frame):
                 self.current_streak = int(self.current_streak)
                 self.currency = self.data[self.row_num][2]
                 self.currency = int(self.currency)
-                self.lastlogin = datetime.strptime(self.data[self.row_num][3], '%Y-%m-%d')
+                if self.data[self.row_num][3] == '': # If no date assigned yet, set as yesterday.
+                    self.lastlogin = datetime.now().date() - timedelta(days = 1)
+                    self.lastlogin = datetime.strptime(str(self.lastlogin), '%Y-%m-%d')
+                else:
+                    self.lastlogin = datetime.strptime(self.data[self.row_num][3], '%Y-%m-%d')
                 self.current_date = datetime.strptime(str(datetime.now().date()), '%Y-%m-%d')
+                self.delta = self.current_date - self.lastlogin
+                if self.delta == timedelta(days = 0):
+                    self.claim_button.config(text = 'Login reward already claimed today!', state = 'disabled', relief = 'sunken')
                 return self.lastlogin, self.current_date
             except ValueError:
                 pass # Ignores other sublists
@@ -534,14 +570,26 @@ class streak_frame(Frame):
     def calc_streak(self):
         self.retrieve_data()
 
-        delta = self.current_date - self.lastlogin
-        if delta == timedelta(days = 1): # Checks whether to change streak or not
+        if self.delta == timedelta(days = 1): # Checks whether to change streak or not
             self.current_streak += 1
             self.currency += (self.current_streak + 1)*5
-        elif delta > timedelta(days = 1):
-            self.current_streak = 0
-        elif delta == timedelta(days = 0):
+            self.streak_label.config(text = self.current_streak)
+            self.streak_info_label.config(
+                text = f'Your streak has increased to {self.current_streak}.\n You have gained {(self.current_streak+1)*5} Leaves!'
+                )
+        elif self.delta > timedelta(days = 1):
+            self.current_streak = 1
+            self.lastlogin = str(self.lastlogin)
+            self.streak_info_label.config(
+                text = f'You last claimed your login rewards on {self.lastlogin[:-9]}\n so your streak has reset.\n You have gained 5 leaves!'
+                )
+            self.streak_label.config(text = self.current_streak)
+        elif self.delta == timedelta(days = 0):
             pass
+
+        self.claim_button.config(text = 'Login reward already claimed today!', state = 'disabled', relief = 'sunken')
+
+        self.streak_info_label.grid(column = 15, row = 300, rowspan = 63, columnspan = 272, sticky = 'nesw')
 
         self.edit_row_column(self.row_num, 3, str(datetime.now().date()))
         self.edit_row_column(self.row_num, 4, self.current_streak)
