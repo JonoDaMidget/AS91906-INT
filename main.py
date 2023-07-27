@@ -1,4 +1,5 @@
 from tkinter import Tk, Entry, Label, Frame, Button, messagebox
+from tkinter.ttk import Combobox
 from tkinter.simpledialog import askstring
 import re
 try: # Only runs if access granted
@@ -18,9 +19,8 @@ class windows(Tk):
         self.maxsize(462, 690)
         self.minsize(462, 690)
         self.frames = {} # Create dictionary to select out frame variable to use
-        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame, streak_frame, daily_frame):
+        for F in (login_frame, home_frame, task_frame, shop_frame, settings_frame, add_frame, streak_frame, daily_frame, plant_info_frame):
             frame = F(container, self)
-
             self.frames[F] = frame
             frame.grid(row = 0, column = 0, sticky = 'nesw')
 
@@ -83,7 +83,6 @@ class windows(Tk):
             frame.row_value = email
             frame.retrieve_data()
             currency = frame.currency
-            print(currency)
             frame = self.frames[shop_frame]
             frame.currency_label.config(text = f'{currency} Leaves')
 
@@ -94,7 +93,31 @@ class windows(Tk):
             frame.row_value = email
             frame.read_csv_file() # In case sign up, reread csv.
             frame.retrieve_data()
+            control_plant1 = frame.plant1
+            control_plant2 = frame.plant2
+            control_plant3 = frame.plant3
+            frame = self.frames[daily_frame]
+            frame.combo_plant1 = control_plant1
+            frame.combo_plant2 = control_plant2
+            frame.combo_plant3 = control_plant3
+            frame.set_combo()
             frame = self.frames[home_frame]
+        
+        elif str(frame) == '.!frame.!daily_frame':
+            frame = self.frames[login_frame]
+            email = frame.user_entry.get()
+            frame = self.frames[streak_frame]
+            frame.row_value = email
+            frame.read_csv_file() # In case sign up, reread csv.
+            frame.retrieve_data()
+            control_plant1 = frame.plant1
+            control_plant2 = frame.plant2
+            control_plant3 = frame.plant3
+            frame = self.frames[daily_frame]
+            frame.combo_plant1 = control_plant1
+            frame.combo_plant2 = control_plant2
+            frame.combo_plant3 = control_plant3
+            frame.set_combo()
 
 class login_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -126,7 +149,7 @@ class login_frame(Frame):
         self.login_error = Label(self, text = '', fg='red')
         self.login_error.config(text = '')
         self.login_error.grid(row = 354, column = 28, rowspan = 21, columnspan = 7, sticky = 'w')
-    
+
     def signup(self):
     # Defining Regex
         email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
@@ -152,7 +175,7 @@ class login_frame(Frame):
             else:
                 break
         file = open('account_details.csv', 'a')
-        new_info = '\n' + new_email.lower() + ',' + new_password + ',100,,0,,'
+        new_info = '\n' + new_email.lower() + ',' + new_password + ',100,,0,0,,,'
         file.write(new_info)
         messagebox.showinfo('Success!', 'Signed up successfully! Close this window to login')
         file.close()
@@ -397,6 +420,18 @@ class add_frame(Frame):
             self.previous_add.config(text = '', state='disabled', relief='flat')
         self.display_search()
 
+class plant_info_frame(Frame):
+    def __init__(self, parent, control_frame):
+        Frame.__init__(self, parent)
+
+        plant_back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(add_frame))
+        plant_back_button.grid(column = 0, row = 0, rowspan = 26, columnspan = 36, sticky = 'W')
+
+        plant_info_h1 = Label(self, text = 'Plant Name')
+        plant_info_h2 = Label(self, text = 'Plant Scientific')
+
+        watering_freq_label = Label(self, text = f'Days')
+        upkeep_difficulty = Label(self, text = f'Difficulty: ')
 
 class shop_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -445,9 +480,9 @@ class shop_frame(Frame):
                             activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12')
         pots_button.grid(row = 190, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
-        furniture_button = Button(self, text = 'Furniture Sets', bg = '#9AB752', fg = 'white',
+        power_button = Button(self, text = 'Power-Ups', bg = '#9AB752', fg = 'white',
                             activebackground = '#9AB752', activeforeground = 'white', width = 24, height = 3, font = 'Arial, 12')
-        furniture_button.grid(row = 400, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
+        power_button.grid(row = 400, column = 0, columnspan = 10, rowspan = 68, sticky = 'n')
 
 
 class task_frame(Frame):
@@ -510,6 +545,31 @@ class daily_frame(Frame):
 
         task_back_button = Button(self, text = 'Back', command = lambda: control_frame.show_frame(task_frame))
         task_back_button.grid(column = 0, row = 0, rowspan = 26, columnspan = 36, sticky = 'W')
+        
+        self.combo_plant1 = 'Plant 1'
+        self.combo_plant2 = 'Plant 2'
+        self.combo_plant3 = 'Plant 3'
+        self.plants_combo = Combobox(self, state = 'readonly')
+
+    def set_combo(self):
+
+        self.plants_combo.bind("<<ComboboxSelected>>", self.display_plant_tasks) # On selection
+
+        if self.combo_plant1 == '' and self.combo_plant2 == '' and self.combo_plant3 == '':
+            self.plants_combo.set("Please add a plant first!")
+        elif self.combo_plant2 == '':
+            self.plants_combo['values'] = (self.combo_plant1)
+            self.plants_combo.set(self.combo_plant1)
+        elif self.combo_plant3 == '':
+            self.plants_combo['values'] = (self.combo_plant1, self.combo_plant2)
+            self.plants_combo.set(self.combo_plant1)
+        else:
+            self.plants_combo['values'] = (self.combo_plant1, self.combo_plant2, self.combo_plant3)
+            self.plants_combo.set(self.combo_plant1)
+        self.plants_combo.grid(row = 240, column = 6)
+
+    def display_plant_tasks(self, event):
+        print('Selected Value')
 
 class streak_frame(Frame):
     def __init__(self, parent, control_frame):
@@ -552,7 +612,7 @@ class streak_frame(Frame):
             csv_file.truncate() # Removes all csv file data once stored within dataframe
             csv_writer.writerows(data)
 
-    def edit_row_column(self, row_index, column_index, value):
+    def edit_cell(self, row_index, column_index, value):
         self.data = self.read_csv_file()
         if row_index < len(self.data) and column_index < len(self.data[row_index]):
             self.data[row_index][column_index] = value
@@ -565,6 +625,13 @@ class streak_frame(Frame):
             try:
                 sublist.index(self.row_value)
                 self.row_num = self.data.index(sublist) # Finds row index of email to edit further on
+
+                # Data for daily task frame:
+                self.plant1 = (self.data[self.row_num][6])
+                self.plant2 = (self.data[self.row_num][7])
+                self.plant3 = (self.data[self.row_num][8])
+
+                # Streak data.
                 self.current_streak = (self.data[self.row_num][4])
                 self.current_streak = int(self.current_streak)
                 self.currency = self.data[self.row_num][2]
@@ -606,9 +673,9 @@ class streak_frame(Frame):
 
         self.streak_info_label.grid(column = 15, row = 300, rowspan = 63, columnspan = 272, sticky = 'nesw')
 
-        self.edit_row_column(self.row_num, 3, str(datetime.now().date()))
-        self.edit_row_column(self.row_num, 4, self.current_streak)
-        self.edit_row_column(self.row_num, 2, self.currency)
+        self.edit_cell(self.row_num, 3, str(datetime.now().date()))
+        self.edit_cell(self.row_num, 4, self.current_streak)
+        self.edit_cell(self.row_num, 2, self.currency)
         return
 
 class settings_frame(Frame):
