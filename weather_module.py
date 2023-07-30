@@ -15,7 +15,7 @@ if allowloc == True:
     locationName = location.reverse(g.latlng)
     location = locationName.address
     locationlist = location.split(sep = ', ')
-    owm = pyowm.OWM('c47ab2899ea8aef42f862b1dc30c0678')
+    owm = pyowm.OWM('API KEY')
     weather_mgr = owm.weather_manager()
     observation = weather_mgr.weather_at_place(locationlist[-3])
     temperature = observation.weather.temperature('celsius')['temp']
