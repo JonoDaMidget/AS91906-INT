@@ -397,7 +397,7 @@ class home_frame(Frame):
         self.plant_num = 1 # Page number of home sprite
 
         self.plants_h1 = Label(self, text='Common Name', font='Arial, 20')
-        self.plants_h1.grid(row=110, column=3, columnspan=5, rowspan=38)
+        self.plants_h1.grid(row=110, column=3, columnspan=10, rowspan=38)
         self.plants_h2 = Label(self, text='Scientific Name', fg='#8a8a8a')
         self.plants_h2.grid(row=148, column=3, rowspan=21, columnspan=5)
 
@@ -411,8 +411,9 @@ class home_frame(Frame):
 
                     # Data for daily task frame:
                     self.plant1_h1 = (self.home_list[self.row_num][0])
-                    self.plants_h1.config(text=f'{self.plant1_h1}      ')
-                    self.plants_h2.config(text=f'{plant_num}            ')
+                    # Spaces to center
+                    self.plants_h1.config(text=f'{self.plant1_h1}                ')
+                    self.plants_h2.config(text=f'{plant_num}              ')
                     plant_type  =  self.home_list[self.row_num][2]
                     if plant_type == 'Flower' or plant_type == 'Foliage':
                         plant_image = Image.open('plant.png')
@@ -431,11 +432,11 @@ class home_frame(Frame):
                     self.left_button.config(text='<', relief='raised', state='active')
                     self.right_button.config(text='>', relief='raised', state='active')
         else:
-            self.plants_h1.config(text='Please add a plant first')
+            self.plants_h1.config(text='Please add a plant first            ')
             self.plants_h2.config(text='')
             self.left_button.config(text='', relief='flat', state='disabled')
             self.right_button.config(text='', relief='flat', state= 'disabled')
-            self.main_sprite.config(text='')
+            self.main_sprite.config(text='', image = '')
         
     def left_home(self):
         if self.plant_num == 1 and self.plant3_h2 != '':
@@ -756,8 +757,9 @@ class plant_info_frame(Frame):
     def retrieve_data_plant(self):
         for sublist in self.data:
             try:
+                # Finds row index of email to edit further on
                 sublist.index(self.row_value)
-                self.row_num = self.data.index(sublist) # Finds row index of email to edit further on
+                self.row_num = self.data.index(sublist)
 
                 # Data for daily task frame:
                 self.plant1 = (self.data[self.row_num][6])
@@ -794,7 +796,7 @@ class plant_info_frame(Frame):
                 messagebox.showerror('Error', 'You are limited to owning 3 plants at this time.')
         except TypeError:
             self.row_num = len(self.data)-1
-            if self.plant1 == '': # Checks which column to edit first
+            if self.plant1 == '':  # Checks which column to edit first
                 self.edit_cell_plant(self.row_num, 6, self.plant_scientific)
                 messagebox.showinfo('Success!', 'You have added your plant successfully!')
             elif self.plant2 == '':
@@ -1003,6 +1005,8 @@ class daily_frame(Frame):
             if weather == 'Rain' or weather == 'Drizzle' or weather == 'Thunderstorm':
                 self.task1.config(text='Ensure plant does not drown')
                 self.task2.config(text='Move out of rain if needed')
+                self.task3.config(text = '')
+                self.task4.config(text = '')
                 self.task1.grid(row=180, column=102, rowspan=21, columnspan=150, sticky='W')
                 self.task2.grid(row=205, column=102, rowspan=21, columnspan=150, sticky='W')
 
@@ -1010,6 +1014,7 @@ class daily_frame(Frame):
                 self.task1.config(text='Check soil moisture')
                 self.task2.config(text='If soil is dry, water as required!')
                 self.task3.config(text='Prune dead leaves')
+                self.task4.config(text = '')
                 self.task1.grid(row=180, column=102, rowspan=21, columnspan=150, sticky='W')
                 self.task2.grid(row=205, column=102, rowspan=21, columnspan=150, sticky='W')
                 self.task3.grid(row=230, column=102, rowspan=21, columnspan=150, sticky='W')
@@ -1057,7 +1062,8 @@ class streak_frame(Frame):
     def write_csv_file(self, data):
         with open('account_details.csv', 'w', newline = '') as csv_file:
             csv_writer = csv.writer(csv_file)
-            csv_file.truncate() # Removes all csv file data once stored within dataframe
+            # Remove all csv file data once stored within dataframe
+            csv_file.truncate()
             csv_writer.writerows(data)
 
     def edit_cell(self, row_index, column_index, value):
@@ -1072,7 +1078,8 @@ class streak_frame(Frame):
         for sublist in self.data:
             try:
                 sublist.index(self.row_value)
-                self.row_num = self.data.index(sublist) # Finds row index of email to edit further on
+                # Finds row index of email to edit further on
+                self.row_num = self.data.index(sublist)
 
                 # Data for daily task frame:
                 self.plant1 = (self.data[self.row_num][6])
@@ -1084,7 +1091,8 @@ class streak_frame(Frame):
                 self.current_streak = int(self.current_streak)
                 self.currency = self.data[self.row_num][2]
                 self.currency = int(self.currency)
-                if self.data[self.row_num][3] == '': # If no date assigned yet, set as yesterday.
+                # If no date assigned yet, set as yesterday.
+                if self.data[self.row_num][3] == '':
                     self.lastlogin = datetime.now().date() - timedelta(days = 1)
                     self.lastlogin = datetime.strptime(str(self.lastlogin), '%Y-%m-%d')
                 else:
@@ -1095,12 +1103,13 @@ class streak_frame(Frame):
                     self.claim_button.config(text='Login reward already claimed today!', state='disabled', relief='sunken')
                 return self.lastlogin, self.current_date
             except ValueError:
-                pass # Ignores other sublists
+                pass  # Ignores other sublists
 
     def calc_streak(self):
         self.retrieve_data()
 
-        if self.delta == timedelta(days = 1): # Checks whether to change streak or not
+        # Check whether to change streak or not
+        if self.delta == timedelta(days = 1):
             self.current_streak += 1
             self.currency += (self.current_streak + 1)*5
             self.streak_label.config(text=self.current_streak)
@@ -1132,7 +1141,7 @@ class settings_frame(Frame):
         Frame.__init__(self, parent)
 
         try:
-            weather_label = Label(self, text=f'{weather}, {temperature-2}°C, {humidity}%', font='Arial, 24')
+            weather_label = Label(self, text=f'{weather}, {temperature}°C, {humidity}%', font='Arial, 24')
         except NameError:
             weather_label = Label(self, text='Service not connected', font='Arial, 24')
         weather_label.grid(row=0, column=0, columnspan=71, rowspan=42, sticky='w')
@@ -1176,9 +1185,6 @@ class settings_frame(Frame):
         pass_label = Label(self, text='Password: ' + '\u2022' * 8)
         pass_label.grid(row=116, column=5, columnspan=3, rowspan=21, sticky='w')
 
-        change_pass = Button(self, text='Edit')
-        change_pass.grid(row=116, column=8, rowspan=21, sticky='w')
-
         logout_button  = Button(self, text='Logout', bg='red',
             fg='white', width=20, font='Arial, 10', command=lambda: control_frame.show_frame(login_frame))
 
@@ -1187,7 +1193,9 @@ class settings_frame(Frame):
 
 if __name__ == '__main__':
     application = Windows()
-    application.lift() # Launches on top
-    application.attributes('-topmost',True) # Launches as topmost weather
+    application.lift()  # Launches on top
+    # Launch as topmost window
+    application.attributes('-topmost',True)
     application.after_idle(application.attributes,'-topmost',False)
+    # Toggle off topmost so user can tab out
     application.mainloop()
