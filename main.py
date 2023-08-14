@@ -1,4 +1,7 @@
-"""This file runs the main program."""
+"""This file runs the main program.
+Current iteration accesses database to display user information, track added plants.
+Also provides currency and streak functions.
+Displays current weather."""
 
 from tkinter import Tk, Entry, Label, Frame, Button, messagebox
 from tkinter.ttk import Combobox
@@ -14,15 +17,15 @@ import csv
 
 
 class Windows(Tk):
-    """Control frame to switch frames."""
-
+    """Control frame to switch frames.
+    Define show frame method and frame specific interactions."""
     # *args **kwargs in case other params passed in.
 
     def __init__(self, *args, **kwargs):
         """Create frame, attributes, dictionary for frame."""
 
         Tk.__init__(self, *args, **kwargs)
-        self.wm_title('CBT')
+        self.wm_title('Blossom')
         container = Frame(self, height=690, width=462)
         container.grid(row=0, column=0)
         self.resizable(False, False)
@@ -213,7 +216,8 @@ class Windows(Tk):
 
 
 class loading_frame(Frame):
-    """Configure account settings."""
+    """Configure account settings in between frames.
+    Create launch button to move to home frame."""
 
     def __init__(self, parent, control_frame):
         """Create widgets."""
@@ -235,7 +239,8 @@ class loading_frame(Frame):
 
 
 class login_frame(Frame):
-    """Create login frame."""
+    """Create login frame.
+    Define login methods and sign up methods."""
 
     def __init__(self, parent, control_frame):
         """Create widgets."""
@@ -244,10 +249,11 @@ class login_frame(Frame):
         for col in range(100):
             self.grid_columnconfigure(col, minsize=5, weight=1)
 
+        # Define logo object and resize
         logo_image = Image.open('logo.png')
         resize_logo  =  logo_image.resize((200,95))
         logo_photo  =  ImageTk.PhotoImage(resize_logo)
-
+        
         title_label = Label(self, text='', image=logo_photo)
         title_label.image = logo_photo
         title_label.grid(row=95, column=18, rowspan=59, columnspan=20)
@@ -275,7 +281,7 @@ class login_frame(Frame):
         self.login_error.grid(row=354, column=28, rowspan=21, columnspan=7, sticky='w')
 
     def signup(self):
-        """Defining Regex"""
+        """Define regex and check if details match."""
 
         email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
         file = open('account_details.csv', 'r')
@@ -286,7 +292,7 @@ class login_frame(Frame):
                 messagebox.showerror('Error', 'This e-mail has already been registered.')
                 file.close()
                 return
-            # If matches regex
+            # If matches regex of email
             elif (re.fullmatch(email_regex, new_email)):
                 pass
             else:
@@ -301,12 +307,14 @@ class login_frame(Frame):
                 break
         file = open('account_details.csv', 'a')
         new_info = '\n' + new_email.lower() + ',' + new_password + ',100,,0,0,,,'
+        # Write to new line in account detail csv
         file.write(new_info)
         messagebox.showinfo('Success!',
                             'Signed up successfully! Please restart to launch properly')
         file.close()
 
     def check_details(self, control_frame):
+        """Check if login details match row in csv."""
         if self.user_entry.get() == '':
             self.login_error.config(text='Please enter an e-mail')
             return
@@ -318,7 +326,7 @@ class login_frame(Frame):
         else:
             password = self.pass_entry.get()
         file = open('account_details.csv', 'r')
-        next(file) # Skip first line
+        next(file)  # Skip first line
         for line in file:
             item = line.split(',')
             if email == item[0].strip() and password == item[1].strip():
@@ -327,19 +335,25 @@ class login_frame(Frame):
                 self.login_error.config(text='Incorrect username or password')
     
     def toggle_show(self):
+        """Create method for show/hide button."""
         # If password text is hidden, show
         if self.pass_entry.cget('show') == '\u2022':
             self.pass_entry.config(show='')
             self.toggle_pass.config(text='Hide')
         else:
-            self.pass_entry.config(show='\u2022') # Else, hide
+            self.pass_entry.config(show='\u2022')  # Else, hide
             self.toggle_pass.config(text='Show')
 
 
 class home_frame(Frame):
-    """Create home frame."""
+    """Create home frame.
+    Create method to display image
+    Create method to retrieve user data
+    Create method to swap between plants."""
 
     def __init__(self, parent, control_frame):
+        """Create widgets."""
+
         Frame.__init__(self, parent)
         try:
             weather_label = Label(self, text=f'{weather}, {temperature}°C, {humidity}%', font='Arial, 24')
@@ -439,6 +453,8 @@ class home_frame(Frame):
             self.main_sprite.config(text='', image = '')
         
     def left_home(self):
+        """Move to previous plant."""
+
         if self.plant_num == 1 and self.plant3_h2 != '':
             self.retrieve_data_home(self.plant3_h2)
             self.plant_num = 3
@@ -459,6 +475,8 @@ class home_frame(Frame):
             return
 
     def right_home(self):
+        """Move to next plant."""
+
         if self.plant_num == 1 and self.plant2_h2 != '':
             self.retrieve_data_home(self.plant2_h2)
             self.plant_num = 2
@@ -480,6 +498,8 @@ class home_frame(Frame):
 
 
 class add_frame(Frame):
+    """Create Add Frame
+    Create methods to add new plants, display search results, swap between pages."""
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
         try:
@@ -526,7 +546,7 @@ class add_frame(Frame):
         self.search_error = Label(self,
             text='', fg='red')
         self.search_error.grid(row=90, column=2, rowspan=21, columnspan=6)
-
+        # Four buttons for four search results
         self.search_result_1 = Button(self, width=15, height=10, text='Placeholder 1',
                                       command=lambda: self.search1_press(control_frame))
         self.search_result_2 = Button(self, width=15, height=10, text='Placeholder 2',
@@ -547,6 +567,7 @@ class add_frame(Frame):
         self.plant_id4 = None
         self.which_button_pressed = 1
     
+    # Separate functions to display each different plant
     def search1_press(self, control_frame):
         self.which_button_pressed = 1
         control_frame.show_frame(plant_info_frame)
@@ -563,11 +584,14 @@ class add_frame(Frame):
         self.which_button_pressed = 4
         control_frame.show_frame(plant_info_frame)
 
+    # Match search results with csv.
     def match_search(self):
-        self.page_number = 1 # Ensures only displays results in order from start
+        # Ensure only displays results from page 1
+        self.page_number = 1
         self.found_results = []
-        self.found_full = [] # Appends all details
-        self.found = False # Used to check if any results were found
+        self.found_full = []  # Appends all details
+        # Used to check if any results were found
+        self.found = False
         file = open('plant_data.csv', 'r')
         next(file)
         search = self.search_entry.get()
@@ -576,18 +600,22 @@ class add_frame(Frame):
         for line in file: # Search for best matches first
             line = line.strip()
             item = line.split(',')
-            lower_list = [x.lower() for x in item] # List Comprehension to lower case
-            regex_list = [re.sub(r'[^\w]', '', x) for x in lower_list] # List Comprehension to remove symbols
-            s1_list = list(regex_list[::3]) # Only searches common names
+            # List Comprehension to lower case
+            lower_list = [x.lower() for x in item]
+            # List Comprehension to remove symbols
+            regex_list = [re.sub(r'[^\w]', '', x) for x in lower_list]
+            s1_list = list(regex_list[::3])  # Only searches common names
             if any(search in a for a in s1_list):
                 self.found_results.append(item[0])
                 self.found_full.append(item)
                 self.found = True
         file.seek(0)
-        for line in file: # Search for other names after
+        for line in file:  # Search for scientific names after
             line = line.strip()
             item = line.split(',')
             lower_list = [x.lower() for x in item]
+            # For each value, substitute symbols to blank via list comprehension
+            # Substitute in order to match searches without correct punctuation.
             regex_list = [re.sub(r'[^\w]', '', x) for x in lower_list]
             s1_list = list(regex_list[::3])
             s2_list = list(regex_list[1:3])
@@ -609,9 +637,9 @@ class add_frame(Frame):
         self.display_search()
 
     def display_search(self):
-        active_button_num = 0 # Selects which button to config
+        active_button_num = 0  # Selects which button to config
         
-        # Iter will be used to iterate through results without
+        # Iterate through results without
         # resetting page number value
         self.page_iter = self.page_number
         
@@ -620,13 +648,14 @@ class add_frame(Frame):
             self.next_add.config(text='>', state='active', relief='raised')
         except IndexError:
             self.next_add.config(text='', state='disabled', relief='flat')
-
-        self.search_result_1.grid_forget() # Forgetting grid so will not show previous search results
-        self.search_result_2.grid_forget() # if not enough results to fill
+        # Forgetting grid so will not show previous search results
+        self.search_result_1.grid_forget()  # if not enough results to fill
+        self.search_result_2.grid_forget()
         self.search_result_3.grid_forget()
         self.search_result_4.grid_forget()
 
         while active_button_num < len(self.found_results) and self.page_iter > 0:
+        # Continue if there are still search results found
             if active_button_num%4 == 0:
                 self.search_result_1.grid_forget()
                 self.search_result_2.grid_forget()
@@ -660,11 +689,15 @@ class add_frame(Frame):
                 messagebox.showerror('Error', 'Error Loading Results')
 
     def next_search(self):
+        """Move to next page."""
+
         self.page_number += 1
         self.previous_add.config(text='<', state='active', relief='raised')
         self.display_search()
 
     def prev_search(self):
+        """Move to previous page."""
+
         self.page_number -= 1
         self.next_add.config(text='>', state='active', relief='raised')
         if self.page_number == 1:
@@ -673,13 +706,18 @@ class add_frame(Frame):
 
 
 class plant_info_frame(Frame):
-    def __init__(self, parent, control_frame):
-        Frame.__init__(self, parent)
+    """Display information about selected plant from add frame.
+    Create widgets to add plant to user account."""
 
+    def __init__(self, parent, control_frame):
+        """Create and define all required widgets."""
+
+        Frame.__init__(self, parent)
 
         for col in range(456):
             self.grid_columnconfigure(col, minsize=1, weight=1)
 
+        # Define variables which are used from control frame
         self.plant_list = []
         self.data = []
         self.read_csv_file_plant()
@@ -713,6 +751,9 @@ class plant_info_frame(Frame):
         add_button.grid(row=500, column=125, rowspan=41, columnspan=94, sticky='W')
 
     def retrieve_plant(self):
+        """Find location of plant in csv
+        Add plant to user account in csv."""
+
         # Plant names for add frame
         plant_name = self.plant_list[self.plant_row][0]
         self.plant_scientific = self.plant_list[self.plant_row][1]
@@ -720,6 +761,7 @@ class plant_info_frame(Frame):
         water_freq = self.plant_list[self.plant_row][5]
         plant_type = self.plant_list[self.plant_row][2]
 
+        # If matches, get data
         if self.plant_list[self.plant_row][3] == '':
             self.plant_info_h3.config(text='')
         else:
@@ -733,7 +775,9 @@ class plant_info_frame(Frame):
         self.plant_type_label.config(text=f'Type: {plant_type}')
     
     def read_csv_file_plant(self):
-        self.data = [] # Clearing previous contents
+        """Reads csv file to nested lists."""
+
+        self.data = []  # Clearing previous contents
         with open('account_details.csv', 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
@@ -741,12 +785,16 @@ class plant_info_frame(Frame):
         return self.data
 
     def write_csv_file_plant(self, data):
+        """Writes new information to csv."""
+
         with open('account_details.csv', 'w', newline = '') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_file.truncate() # Removes all csv file data once stored within dataframe
             csv_writer.writerows(data)
 
     def edit_cell_plant(self, row_index, column_index, value):
+        """Edits row and column value within nested list."""
+
         self.data = self.read_csv_file_plant()
         if row_index < len(self.data) and column_index < len(self.data[row_index]):
             self.data[row_index][column_index] = value
@@ -755,6 +803,8 @@ class plant_info_frame(Frame):
             pass
 
     def retrieve_data_plant(self):
+        """Find index of owned plants of user account."""
+
         for sublist in self.data:
             try:
                 # Finds row index of email to edit further on
@@ -770,7 +820,9 @@ class plant_info_frame(Frame):
                 pass # Ignores other sublists
     
     def append_plant(self):
+        """Add plant to users account."""
 
+        # Call function to get information about current plant selected
         self.retrieve_data_plant()
 
         # Create conditions if user is first time sign up
@@ -783,7 +835,7 @@ class plant_info_frame(Frame):
         if self.plant3 == None:
             self.plant3 = ''
         try:
-            if self.plant1 == '': # Checks which column to edit first
+            if self.plant1 == '':  # Checks which column to edit first
                 self.edit_cell_plant(self.row_num, 6, self.plant_scientific)
                 messagebox.showinfo('Success!', 'You have added your plant successfully!')
             elif self.plant2 == '':
@@ -794,6 +846,8 @@ class plant_info_frame(Frame):
                 messagebox.showinfo('Success!', 'You have added your plant successfully!')
             else:
                 messagebox.showerror('Error', 'You are limited to owning 3 plants at this time.')
+
+        # Except function to ignore when information does not match.
         except TypeError:
             self.row_num = len(self.data)-1
             if self.plant1 == '':  # Checks which column to edit first
@@ -810,9 +864,16 @@ class plant_info_frame(Frame):
 
 
 class shop_frame(Frame):
+    """Class for shop frame.
+    Get information about user currency and display in top right
+    Create buttons to link to shops."""
+
     def __init__(self, parent, control_frame):
+        """Create and grid widgets."""
+
         Frame.__init__(self, parent)
 
+        # Create top navigation widgets
         try:
             weather_label = Label(self, text=f'{weather}, {temperature}°C, {humidity}%', font='Arial, 24')
         except NameError:
@@ -852,6 +913,8 @@ class shop_frame(Frame):
         self.currency_label = Button(self, text='Money\nPlacehold')
         self.currency_label.grid(row=70, column=8, rowspan=41, sticky  = 'E')
 
+        # Create shop buttons
+
         pots_button = Button(self, text='Pot Designs', bg='#9AB752', fg='white',
                             activebackground='#9AB752', activeforeground='white', width=24, height=3, font='Arial, 12',
                             command=lambda: messagebox.showerror('Error', 'Shop Functionalities will come in a later patch.'))
@@ -864,7 +927,12 @@ class shop_frame(Frame):
 
 
 class task_frame(Frame):
+    """Create task frame
+    Create widgets to link to tasks and daily logins."""
+
     def __init__(self, parent, control_frame):
+        """Define and grid widgets."""
+
         Frame.__init__(self, parent)
         try:
             weather_label = Label(self, text=f'{weather}, {temperature}°C, {humidity}%', font='Arial, 24')
@@ -902,12 +970,14 @@ class task_frame(Frame):
 
         topnav_settings.grid(row=43, column=8, columnspan=2, rowspan=24, sticky='nw')
 
+        # Links to task frame
         tasks_button = Button(self, text='Daily Tasks', bg='#9AB752', fg='white',
             activebackground='#9AB752', activeforeground='white', width=24, height=3, font='Arial, 12',
             command=lambda: control_frame.show_frame(daily_frame))
 
         tasks_button.grid(row=190, column=0, columnspan=10, rowspan=68, sticky='n')
 
+        # Links to streak frame
         streak_button = Button(self, text='Login Rewards', bg='#9AB752', fg='white',
             activebackground='#9AB752', activeforeground='white',
             width=24, height=3, font='Arial, 12', command=lambda: control_frame.show_frame(streak_frame))
@@ -916,7 +986,12 @@ class task_frame(Frame):
 
 
 class daily_frame(Frame):
+    """Display daily frame
+    Display tasks based on weather information and plant."""
+
     def __init__(self, parent, control_frame):
+        """Define and grid widgets."""
+
         Frame.__init__(self, parent)
 
         self.plant_list_combo = []
@@ -927,16 +1002,23 @@ class daily_frame(Frame):
         task_back_button = Button(self, text='Back', command=lambda: control_frame.show_frame(task_frame))
         task_back_button.grid(column=0, row=0, rowspan=26, columnspan=36, sticky='W')
         
+        # Define combobox values
         self.combo_plant1 = 'Plant 1'
         self.combo_plant2 = 'Plant 2'
         self.combo_plant3 = 'Plant 3'
+
+        # Set combobox field as non-editable.
         self.plants_combo = Combobox(self, state='readonly')
+        
+        # Hide all task texts
         self.task1 = Label(self, text='')
         self.task2 = Label(self, text='')
         self.task3 = Label(self, text='')
         self.task4 = Label(self, text='')
 
     def set_combo(self):
+        """Bind command to selecting combobox value
+        On select, display plant information."""
 
         self.plants_combo.bind("<<ComboboxSelected>>", self.display_plant_tasks) # On selection
 
@@ -991,6 +1073,8 @@ class daily_frame(Frame):
         self.plants_combo.grid(row=150, column=80, rowspan=21, columnspan=143)
 
     def display_plant_tasks(self, event):
+        """Set tasks based on weather"""
+
         try:
             if temperature > 20 or weather == 'Clear' or weather == 'Clouds':
                 self.task1.config(text='Ensure plant does not burn')
@@ -1020,12 +1104,19 @@ class daily_frame(Frame):
                 self.task3.grid(row=230, column=102, rowspan=21, columnspan=150, sticky='W')
 
         except NameError:
+            # Except function incase cannot reach weather variables
             self.task1.config(text='Please enable location services to access tasks')
             self.task1.grid(row=301, column=72, rowspan=21, columnspan=247, sticky='W')
 
 
 class streak_frame(Frame):
+    """Used to claim daily reward each day
+    Reward will scale with streak.
+    Define claim method"""
+
     def __init__(self, parent, control_frame):
+        """Create and manage widgets,"""
+
         Frame.__init__(self, parent)
 
         for col in range(456):
@@ -1035,10 +1126,13 @@ class streak_frame(Frame):
         self.read_csv_file() # Appends to dataframe
         self.row_value = None
 
-        streak_back_button = Button(self, text='Back', command=lambda: control_frame.show_frame(task_frame))
+        streak_back_button = Button(self, text='Back',
+                                    command=lambda: control_frame.show_frame(task_frame)
+                                    )
         streak_back_button.grid(column=0, row=0, rowspan=26, columnspan=36, sticky='W')
 
-        self.claim_button = Button(self, text="        Claim Today's Daily Reward        ", 
+        self.claim_button = Button(self,
+                                   text="        Claim Today's Daily Reward        ", 
                                    command=lambda: self.calc_streak()
                                    )
         self.claim_button.grid(column=95, row=456, rowspan=26, columnspan=153, sticky='W')
@@ -1052,7 +1146,10 @@ class streak_frame(Frame):
         self.streak_title_label.grid(column=123, row=130, rowspan=42, columnspan=106, sticky='W')
 
     def read_csv_file(self):
-        self.data = [] # Clearing previous contents
+        """Append csv info to list,"""
+
+        # Clearing previous contents
+        self.data = []
         with open('account_details.csv', 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
@@ -1060,6 +1157,8 @@ class streak_frame(Frame):
         return self.data
 
     def write_csv_file(self, data):
+        """Write new data to csv,"""
+
         with open('account_details.csv', 'w', newline = '') as csv_file:
             csv_writer = csv.writer(csv_file)
             # Remove all csv file data once stored within dataframe
@@ -1067,6 +1166,8 @@ class streak_frame(Frame):
             csv_writer.writerows(data)
 
     def edit_cell(self, row_index, column_index, value):
+        """Edits specific row and cell,"""
+
         self.data = self.read_csv_file()
         if row_index < len(self.data) and column_index < len(self.data[row_index]):
             self.data[row_index][column_index] = value
@@ -1075,6 +1176,9 @@ class streak_frame(Frame):
             pass
 
     def retrieve_data(self):
+        """Get data from csv file.
+        Place into nested list."""
+
         for sublist in self.data:
             try:
                 sublist.index(self.row_value)
@@ -1106,9 +1210,12 @@ class streak_frame(Frame):
                 pass  # Ignores other sublists
 
     def calc_streak(self):
+        """Check how to increment streak."""
+
         self.retrieve_data()
 
         # Check whether to change streak or not
+        # If logged in yesterday, increase, else reset
         if self.delta == timedelta(days = 1):
             self.current_streak += 1
             self.currency += (self.current_streak + 1)*5
@@ -1137,6 +1244,9 @@ class streak_frame(Frame):
 
 
 class settings_frame(Frame):
+    """Create settings frame.
+    Define logout function and change password method."""
+
     def __init__(self, parent, control_frame):
         Frame.__init__(self, parent)
 
@@ -1176,6 +1286,7 @@ class settings_frame(Frame):
 
         topnav_settings.grid(row=43, column=8, columnspan=2, rowspan=24, sticky='nw')
 
+        # Grid profile information widgets.
         pfp_placehold = Button(self, text='Profile Picture', height=8, width=16)
         pfp_placehold.grid(row=90, column=1, rowspan=131, columnspan=4)
 
@@ -1192,6 +1303,7 @@ class settings_frame(Frame):
 
 
 if __name__ == '__main__':
+    # If launched from main file.
     application = Windows()
     application.lift()  # Launches on top
     # Launch as topmost window
